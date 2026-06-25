@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Untukmu ❤️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Mencegah scroll di body */
+            background-color: #fce7f3; /* Pink background */
+        }
+        
+        .font-handwriting {
+            font-family: 'Caveat', cursive;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0.5) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1.5) rotate(360deg); opacity: 0; }
+        }
+
+        /* NEW ENVELOPE STYLES */
+        .envelope-wrapper {
+            perspective: 1200px; /* Memberikan efek 3D saat flap terbuka */
+            z-index: 10;
+        }
+
+        .envelope-container {
+            position: relative;
+            width: 320px;
+            max-width: 85vw;
+            height: 220px;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            perspective: 1200px; /* Ditambahkan agar rotasi tetap 3D tapi tidak merusak z-index */
+        }
+
+        @media (max-width: 350px) {
+            .envelope-container {
+                transform: scale(0.85);
+            }
+            .envelope-container:hover {
+                transform: scale(0.9) translateY(-5px);
+            }
+        }
+
+        .envelope-container:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+
+        .envelope-front {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f472b6, #db2777); /* Gradasi warna pink elegan */
+            border-radius: 8px;
+            box-shadow: 0 15px 35px rgba(236,72,153,0.4);
+            z-index: 3;
+            overflow: hidden;
+        }
+        
+        /* Efek lipatan di bagian depan amplop */
+        .envelope-front::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 60%;
+            background: rgba(255,255,255,0.08);
+            clip-path: polygon(0 100%, 100% 100%, 50% 0);
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 65%;
+            background: linear-gradient(to bottom, #f9a8d4, #f472b6);
+            border-radius: 8px 8px 0 0;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            z-index: 4;
+            transform-origin: top;
+            /* Animasi 3D memutar ke belakang */
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.4s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .envelope-open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1; /* Pindah ke belakang surat saat terbuka */
+        }
+
+        /* Stempel Lilin (Wax Seal) */
+        .wax-seal {
+            position: absolute;
+            top: 65%; /* Tepat di ujung segitiga flap */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 45px;
+            height: 45px;
+            background: radial-gradient(circle, #e11d48, #9f1239);
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .envelope-open .wax-seal {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        .letter-peek {
+            position: absolute;
+            bottom: 0;
+            left: 4%;
+            width: 92%;
+            height: 95%;
+            background-color: #fff;
+            /* Efek kertas bergaris mirip buku tulis */
+            background-image: repeating-linear-gradient(transparent, transparent 24px, #fbcfe8 24px, #fbcfe8 25px);
+            border-radius: 8px 8px 0 0;
+            z-index: 2;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 25px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .envelope-open .letter-peek {
+            transform: translateY(-90px);
+            transition-delay: 0.5s; /* Tunggu amplop benar-benar terbuka agar tidak ketabrak */
+        }
+
+        .view-section {
+            position: fixed; /* Ubah dari absolute ke fixed agar mengikuti tinggi layar asli HP */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .hidden-view {
+            opacity: 0;
+            pointer-events: none;
+            /* transform dihapus agar background overlay tidak membesar */
+        }
+
+        /* Animasi kotak surat */
+        .letter-content {
+            transform: translateY(100px) scale(0.9);
+            opacity: 0;
+            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #view-letter:not(.hidden-view) .letter-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            transition-delay: 0.2s; /* Muncul setelah overlay */
+        }
+
+        /* Animasi halaman sukses */
+        .success-content {
+            transform: scale(0.5) rotate(-5deg);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #view-success:not(.hidden-view) .success-content {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+            transition-delay: 0.1s;
+        }
+
+        /* Responsive utilities */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Button transition */
+        #btn-yes {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        /* Floating Hearts */
+        .heart-bg {
+            position: absolute;
+            font-size: 24px;
+            color: #fbcfe8; /* pink-200 */
+            z-index: 0;
+            user-select: none;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Hearts Container -->
+    <div id="hearts-container" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+
+    <!-- TAMPILAN 1: Amplop -->
+    <div id="view-envelope" class="view-section z-10 flex flex-col items-center justify-center p-4">
+        <h1 class="text-3xl md:text-4xl font-handwriting text-pink-600 mb-12 font-bold text-center z-10 drop-shadow-md">Ada pesan buat kamu...</h1>
+        
+        <div class="envelope-wrapper">
+            <div class="envelope-container" id="envelope">
+                <div class="envelope-flap"></div>
+                <div class="wax-seal" id="wax-seal">❤️</div>
+                <div class="letter-peek" id="letter-peek">
+                    <span class="text-pink-500 font-handwriting text-2xl font-bold">Tarik aku! ✨</span>
+                </div>
+                <div class="envelope-front"></div>
+            </div>
+        </div>
+
+        <p class="mt-12 text-pink-500 font-semibold animate-pulse cursor-pointer z-10 transition-opacity duration-500" id="text-click">
+            (Klik stempel hatinya ya!)
+        </p>
+    </div>
+
+    <!-- TAMPILAN 2: Isi Surat dan Pertanyaan -->
+    <div id="view-letter" class="view-section hidden-view z-20 bg-black/40 backdrop-blur-sm px-4 py-8">
+        <div class="letter-content bg-white max-w-lg w-full rounded-2xl shadow-2xl p-6 md:p-8 pb-12 relative overflow-y-auto max-h-[85%] scrollbar-hide flex flex-col text-center border-4 border-pink-100">
+            <!-- Decorative corner elements -->
+            <div class="absolute -top-4 -left-4 md:-top-6 md:-left-6 text-5xl md:text-6xl opacity-20 pointer-events-none">🌸</div>
+            <div class="absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-5xl md:text-6xl opacity-20 pointer-events-none">🌸</div>
+            
+            <h2 class="text-3xl md:text-4xl font-handwriting text-pink-500 mb-4 md:mb-6 font-bold z-10 relative mt-2 md:mt-0">Hai Cantik! ✨</h2>
+            
+            <div class="text-gray-700 leading-relaxed mb-6 md:mb-8 space-y-3 md:space-y-4 text-base md:text-lg z-10 relative">
+                <p>Jujur, butuh keberanian besar buat nulis ini. Tapi kalau nggak diungkapin sekarang, aku tahu aku bakal nyesel seumur hidup.</p>
+                <p>Entah mulai dari kapan, kamu pelan-pelan jadi bagian paling penting di hari-hariku. Notif dari kamu selalu berhasil bikin senyumku mengembang. Kamu punya cara ajaib yang bikin duniaku terasa jauh lebih hangat, tenang, dan berarti. 🥰</p>
+                <p>Aku udah nggak mau cuma jadi sekadar teman ngobrol. Aku pengen nemenin kamu di segala sedih dan senengnya kamu.</p>
+                <p class="font-bold text-pink-600 text-lg md:text-xl mt-4 md:mt-6">So... would you be mine?</p>
+            </div>
+
+            <!-- Area Tombol -->
+            <div class="flex flex-row justify-center items-center gap-2 md:gap-3 mt-4 w-full z-50 relative flex-wrap min-h-[80px]">
+                <button id="btn-yes" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 border-2 border-pink-400 m-1">
+                    Mau banget! ❤️
+                </button>
+                <button id="btn-no" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 px-6 rounded-full shadow transition-all duration-300 border border-gray-300 whitespace-nowrap m-1">
+                    Nggak ah
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAMPILAN 3: Jika Diterima -->
+    <div id="view-success" class="view-section hidden-view z-30 bg-pink-50">
+        <div class="success-content text-center p-6 flex flex-col items-center">
+            <!-- Bisa diganti dengan URL GIF romantis -->
+            <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjRzM2pyaXF6aGN6OHd5MmR4YnQyYnY3Ym52YnNnYXh1ZjFkNHFveSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VzQ9PUdifClRm/giphy.gif" alt="Happy Cat" class="w-64 h-64 object-cover rounded-2xl shadow-xl mb-6 border-4 border-white">
+            
+            <h1 class="text-4xl md:text-5xl font-handwriting text-pink-600 font-bold mb-4">YEEAAAYYY!!! 🎉</h1>
+            <p class="text-lg md:text-xl text-gray-700 font-medium mb-6">
+                Makasih ya udah mau nerima aku! <br>
+                <span class="text-pink-500 font-bold">I Love You! ❤️</span>
+            </p>
+
+            <!-- Spotify Player -->
+            <div class="w-full max-w-sm mt-2 rounded-2xl overflow-hidden shadow-lg border border-pink-200 bg-white">
+                <iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/0T5iIrXA4p5GsubkhuBIKV?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mengambil elemen-elemen yang dibutuhkan
+        const envelope = document.getElementById('envelope');
+        const letterPeek = document.getElementById('letter-peek');
+        const textClick = document.getElementById('text-click');
+        const viewEnvelope = document.getElementById('view-envelope');
+        const viewLetter = document.getElementById('view-letter');
+        const viewSuccess = document.getElementById('view-success');
+        
+        const btnYes = document.getElementById('btn-yes');
+        const btnNo = document.getElementById('btn-no');
+        const heartsContainer = document.getElementById('hearts-container');
+
+        let noClickCount = 0;
+        const noButtonTexts = [
+            "Nggak ah",
+            "Yakin nggak mau?",
+            "Pikir-pikir lagi dong...",
+            "Jangan kejam gitu ih 😢",
+            "Plissss 🙏",
+            "Beneran nolak nih?",
+            "Aku nangis loh 😭",
+            "Tombol ini rusak, pencet yang kiri aja!"
+        ];
+
+        // 1. Membuat efek hati beterbangan di background
+        function createHearts() {
+            const hearts = ['❤️', '💖', '💕', '🌸', '✨'];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-bg';
+                    heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+                    heart.style.left = Math.random() * 100 + 'vw';
+                    heart.style.animationDuration = (Math.random() * 10 + 5) + 's';
+                    heart.style.opacity = Math.random() * 0.5 + 0.2;
+                    heartsContainer.appendChild(heart);
+                    
+                    // Bersihkan elemen hati setelah animasi selesai lalu buat lagi
+                    setTimeout(() => {
+                        heart.remove();
+                        createHeartsSingle();
+                    }, 15000);
+                }, i * 500);
+            }
+        }
+
+        function createHeartsSingle() {
+            const hearts = ['❤️', '💖', '💕', '🌸', '✨'];
+            const heart = document.createElement('div');
+            heart.className = 'heart-bg';
+            heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDuration = (Math.random() * 10 + 5) + 's';
+            heart.style.opacity = Math.random() * 0.5 + 0.2;
+            heartsContainer.appendChild(heart);
+            setTimeout(() => {
+                heart.remove();
+                createHeartsSingle();
+            }, 15000);
+        }
+
+        createHearts();
+
+        // 2. Logika membuka amplop dengan animasi lebih smooth
+        envelope.addEventListener('click', () => {
+            if (envelope.classList.contains('envelope-open')) return; // Mencegah klik berkali-kali
+            
+            // Mainkan animasi buka flap dan stempel lilin menghancur/menghilang
+            envelope.classList.add('envelope-open');
+            textClick.style.opacity = '0';
+            
+            // Ubah teks petunjuk setelah memudar
+            setTimeout(() => {
+                textClick.innerText = "(Sekarang tarik kertas suratnya ke atas!)";
+                textClick.style.opacity = '1';
+            }, 500);
+        });
+
+        // Event listener khusus untuk kertas surat (Bisa ditarik / diklik)
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+
+        function startDrag(e) {
+            if (!envelope.classList.contains('envelope-open')) return;
+            isDragging = true;
+            startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            currentY = startY;
+            letterPeek.style.transition = 'none'; // Matikan animasi sementara agar responsif saat ditarik
+            
+            // Tambahkan listener move hanya saat sedang ditarik agar tidak merusak scroll di HP
+            if (e.type.includes('mouse')) {
+                window.addEventListener('mousemove', drag);
+            } else {
+                window.addEventListener('touchmove', drag, {passive: false});
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault(); // Mencegah layar ikut ke-scroll di HP
+            currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            let deltaY = currentY - startY;
+            
+            // Hanya izinkan ditarik ke atas (nilai negatif)
+            if (deltaY > 0) deltaY = 0;
+            
+            // -90 adalah posisi awal saat amplop terbuka (mengintip)
+            letterPeek.style.transform = `translateY(${(-90) + deltaY}px)`;
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            // Hapus listener move
+            window.removeEventListener('mousemove', drag);
+            window.removeEventListener('touchmove', drag);
+            
+            letterPeek.style.transition = ''; // Kembalikan animasi bawaan CSS
+            
+            let deltaY = currentY - startY;
+            
+            // Jika ditarik lebih dari 50px ke atas ATAU hanya diklik (pergerakan sangat sedikit)
+            if (deltaY < -50 || Math.abs(deltaY) < 5) {
+                // Efek surat terbang ke atas
+                letterPeek.style.transform = `translateY(-150vh)`; 
+                
+                textClick.style.opacity = '0'; // Sembunyikan teks petunjuk
+                
+                setTimeout(() => {
+                    viewEnvelope.classList.add('hidden-view');
+                    setTimeout(() => {
+                        viewLetter.classList.remove('hidden-view');
+                    }, 50);
+                }, 350);
+            } else {
+                // Jika tarikan kurang kuat, surat kembali masuk ke dalam amplop
+                letterPeek.style.transform = ''; 
+            }
+        }
+
+        // Support untuk Mouse
+        letterPeek.addEventListener('mousedown', startDrag);
+        window.addEventListener('mouseup', endDrag);
+
+        // Support untuk Touch Screen (HP)
+        letterPeek.addEventListener('touchstart', startDrag, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        // 3. Logika Tombol "Nggak" (Membuat tombol "Mau" membesar)
+        btnNo.addEventListener('click', () => {
+            noClickCount++;
+            
+            // Ubah teks tombol "Nggak"
+            const textIndex = Math.min(noClickCount, noButtonTexts.length - 1);
+            btnNo.innerText = noButtonTexts[textIndex];
+
+            // Memperbesar ukuran font dan padding tombol "Mau" secara proporsional
+            const currentFontSize = Math.min(16 + (noClickCount * 5), 40); 
+            const currentPaddingY = 12 + (noClickCount * 4);
+            const currentPaddingX = 24 + (noClickCount * 8);
+            
+            btnYes.style.fontSize = `${currentFontSize}px`;
+            btnYes.style.padding = `${currentPaddingY}px ${currentPaddingX}px`;
+            
+            if (noClickCount > 4) {
+                btnYes.style.width = '100%';
+            }
+
+            // Membuat tombol "Nggak" mengecil secara fisik (bukan cuma scale) agar layout tetap rapi
+            const noFontSize = Math.max(16 - (noClickCount * 2), 10);
+            const noPaddingY = Math.max(12 - (noClickCount * 2), 6);
+            const noPaddingX = Math.max(24 - (noClickCount * 3), 10);
+            
+            btnNo.style.fontSize = `${noFontSize}px`;
+            btnNo.style.padding = `${noPaddingY}px ${noPaddingX}px`;
+            
+            // Hilangkan scale agar ukurannya tidak memakan ruang kosong
+            btnNo.style.transform = `none`;
+        });
+
+        // 4. Logika Tombol "Mau!" (Diterima!)
+        btnYes.addEventListener('click', () => {
+            viewLetter.classList.add('hidden-view');
+            
+            setTimeout(() => {
+                viewSuccess.classList.remove('hidden-view');
+                
+                // Tambahkan lebih banyak hati beterbangan saat diterima
+                for(let i=0; i<30; i++) {
+                    createHeartsSingle();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
